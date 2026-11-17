@@ -1,0 +1,10 @@
+{
+  "zz1403489227-crypto/issue2patch-sandbox": {
+    "env_repo": "pytest-dev/pytest",
+    "env_version": "5.2",
+    "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-6202:latest",
+    "image_base_ref": "i2p-base",
+    "base": "main",
+    "token_file": "var/github-token"
+  }
+}

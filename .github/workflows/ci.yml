@@ -1,0 +1,31 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: lab-gpu            # one gate at a time: they share the lab's two GPUs
+  cancel-in-progress: false
+jobs:
+  gate:
+    # The runner is a machine with GPUs in a lab. It serves only the private development repository: a
+    # self-hosted runner must never run code from pull requests of a public repository.
+    if: github.repository == 'zz1403489227-crypto/issue2patch'
+    runs-on: [self-hosted, i2p-lab]
+    timeout-minutes: 120
+    steps:
+      # No marketplace actions: from the lab server, git transfers to GitHub are unreliable while the REST API
+      # is not (see docs/decision-log.md), so the code under test comes as a tarball of the exact commit.
+      - name: fetch the commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          rm -rf ./* ./.[!.]* 2>/dev/null || true
+          curl -4 -sSfL --retry 4 -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/tarball/$SHA" | tar xz --strip-components=1
+      - name: gate
+        env:
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/ci.sh

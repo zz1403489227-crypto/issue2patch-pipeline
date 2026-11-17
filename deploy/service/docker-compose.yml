@@ -1,0 +1,43 @@
+# Stage 2 service infrastructure: task state (Postgres) and task delivery (RabbitMQ).
+# Separate from the Langfuse stack on purpose: the dashboard can go down without touching the service.
+# Ports bound to 127.0.0.1 only; secrets from var/service.env (mode 600, not in git).
+services:
+  postgres:
+    image: public.ecr.aws/docker/library/postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: i2p
+      POSTGRES_PASSWORD: ${I2P_PG_PASSWORD}
+      POSTGRES_DB: i2p
+      TZ: UTC
+    ports: ["127.0.0.1:13432:5432"]
+    volumes: [pg_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U i2p"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+      start_period: 120s
+
+  rabbitmq:
+    # 4.3+: quorum queues give strict message priority (4.1 used two buckets dispatched 2:1)
+    image: public.ecr.aws/docker/library/rabbitmq:4.3-management
+    restart: unless-stopped
+    hostname: i2p-rabbit  # the data directory is keyed by node name; keep it stable across restarts
+    environment:
+      RABBITMQ_DEFAULT_USER: i2p
+      RABBITMQ_DEFAULT_PASS: ${I2P_MQ_PASSWORD}
+    volumes:
+      - mq_data:/var/lib/rabbitmq
+      - ./rabbitmq.conf:/etc/rabbitmq/conf.d/90-i2p.conf:ro
+    ports: ["127.0.0.1:13672:5672", "127.0.0.1:13673:15672"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  pg_data:
+  mq_data:

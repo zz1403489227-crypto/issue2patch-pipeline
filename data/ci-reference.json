@@ -1,0 +1,5 @@
+{
+  "canary_prefetch_hits": 11,
+  "canary_resolved_floor": 8,
+  "_notes": "prefetch hits: deterministic, measured on the 20 canary tasks with prefetch v2 (v1 had 8). Resolved floor: the canary resolved 60-65% (12-13/20) in 3-run measurements; one run of 20 tasks varies by about +-2-3 tasks, so the floor is set at 8/20 to catch real breakage without blocking on noise."
+}
